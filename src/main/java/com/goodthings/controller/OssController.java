@@ -25,7 +25,7 @@ public class OssController {
     @PostMapping("/upload")
     public Result<?> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return Result.fail("文件不能为空");
+            return Result.error("文件不能为空");
         }
 
         try {
@@ -57,7 +57,7 @@ public class OssController {
 
             return Result.success(data);
         } catch (IOException e) {
-            return Result.fail("上传失败: " + e.getMessage());
+            return Result.error("上传失败: " + e.getMessage());
         }
     }
 }
