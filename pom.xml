@@ -52,11 +52,6 @@
             <version>8.0.33</version>
         </dependency>
 
-        <!-- Redis (可选) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
 
         <!-- JWT -->
         <dependency>
@@ -77,12 +72,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- 阿里云OSS -->
-        <dependency>
-            <groupId>com.aliyun.oss</groupId>
-            <artifactId>aliyun-sdk-oss</artifactId>
-            <version>${aliyun.oss.version}</version>
-        </dependency>
 
         <!-- Lombok -->
         <dependency>
