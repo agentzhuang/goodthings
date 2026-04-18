@@ -24,6 +24,7 @@ public class ItemController {
     private final CmsItemMapper itemMapper;
     private final CmsItemTagMapper itemTagMapper;
     private final CmsLikeMapper likeMapper;
+    private final CmsCommentMapper commentMapper;
     private final SysUserMapper userMapper;
     private final JwtUtil jwtUtil;
 
@@ -116,6 +117,10 @@ public class ItemController {
         if (!item.getUserId().equals(userId)) {
             throw new BizException(403, "无权限删除");
         }
+        // cascade delete related records
+        itemTagMapper.delete(new LambdaQueryWrapper<CmsItemTag>().eq(CmsItemTag::getItemId, id));
+        likeMapper.delete(new LambdaQueryWrapper<CmsLike>().eq(CmsLike::getItemId, id));
+        commentMapper.delete(new LambdaQueryWrapper<CmsComment>().eq(CmsComment::getItemId, id));
         itemMapper.deleteById(id);
         return Result.success("删除成功");
     }
@@ -124,6 +129,12 @@ public class ItemController {
     public Result<?> like(@RequestHeader("Authorization") String authHeader,
                           @PathVariable Long id) {
         Long userId = getUserIdFromHeader(authHeader);
+
+        // 检查收藏品是否存在
+        CmsItem item = itemMapper.selectById(id);
+        if (item == null) {
+            throw new BizException("收藏品不存在");
+        }
 
         // 检查是否已点赞
         CmsLike existLike = likeMapper.selectOne(
@@ -154,6 +165,12 @@ public class ItemController {
     public Result<?> unlike(@RequestHeader("Authorization") String authHeader,
                            @PathVariable Long id) {
         Long userId = getUserIdFromHeader(authHeader);
+
+        // 检查收藏品是否存在
+        CmsItem item = itemMapper.selectById(id);
+        if (item == null) {
+            throw new BizException("收藏品不存在");
+        }
 
         likeMapper.delete(
                 new LambdaQueryWrapper<CmsLike>()

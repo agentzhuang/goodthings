@@ -2,6 +2,7 @@ package com.goodthings.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.goodthings.common.BizException;
 import com.goodthings.common.Result;
 import com.goodthings.entity.CmsTag;
 import com.goodthings.mapper.CmsTagMapper;
@@ -39,13 +40,15 @@ public class TagController {
     }
 
     @PostMapping
-    public Result<?> create(@RequestBody CmsTag tag) {
+    public Result<?> create(@RequestHeader("Authorization") String authHeader, @RequestBody CmsTag tag) {
+        validateAuth(authHeader);
         tagMapper.insert(tag);
         return Result.success("创建成功", java.util.Collections.singletonMap("tagId", tag.getId()));
     }
 
     @PostMapping("/items/{itemId}")
-    public Result<?> bindItem(@PathVariable Long itemId, @RequestBody List<Long> tagIds) {
+    public Result<?> bindItem(@RequestHeader("Authorization") String authHeader, @PathVariable Long itemId, @RequestBody List<Long> tagIds) {
+        validateAuth(authHeader);
         // 更新标签使用次数
         for (Long tagId : tagIds) {
             tagMapper.update(null,
@@ -55,5 +58,11 @@ public class TagController {
             );
         }
         return Result.success("绑定成功");
+    }
+
+    private void validateAuth(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BizException(401, "未登录");
+        }
     }
 }

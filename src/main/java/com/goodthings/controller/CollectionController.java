@@ -109,6 +109,11 @@ public class CollectionController {
         }
 
         Long itemId = body.get("itemId");
+        // 检查收藏品是否存在
+        CmsItem item = itemMapper.selectById(itemId);
+        if (item == null) {
+            throw new BizException("收藏品不存在");
+        }
         // 检查是否已添加
         CmsItemCollection exist = itemCollectionMapper.selectOne(
                 new LambdaQueryWrapper<CmsItemCollection>()
