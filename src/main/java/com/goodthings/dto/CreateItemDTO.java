@@ -2,6 +2,7 @@ package com.goodthings.dto;
 
 import lombok.Data;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Data
@@ -11,7 +12,7 @@ public class CreateItemDTO {
 
     private String description;
 
-    @NotBlank(message = "媒体类型不能为空")
+    @NotNull(message = "媒体类型不能为空")
     private Integer mediaType;
 
     @NotBlank(message = "封面URL不能为空")
