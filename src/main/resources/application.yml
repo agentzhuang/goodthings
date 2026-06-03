@@ -31,8 +31,10 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 # JWT配置
+# secret 已替换为强随机密钥（通过 openssl rand -base64 48 生成）
+# 生产环境请通过环境变量 JWT_SECRET 注入，不要把密钥提交到仓库
 jwt:
-  secret: goodthings-secret-key-change-in-production
+  secret: ${JWT_SECRET:mJeP8E1UxGSjEZLb55xSYPdZYrTMswuqACUJ7CpZQTutfhiagGylaGpWoBif0w6S}
   expiration: 86400000  # 24小时
 
 # 文件上传配置
