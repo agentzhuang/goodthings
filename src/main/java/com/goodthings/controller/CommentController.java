@@ -56,7 +56,8 @@ public class CommentController {
         comment.setStatus(1);
         commentMapper.insert(comment);
 
-        // 更新评论数
+        // B10 原子计数器：setSql(\"comment_count = comment_count + 1\") 已是 MySQL 原子操作
+        // 无需先 select 读取当前值再 +1，避免 TOCTOU 竞态
         itemMapper.update(null,
                 new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<com.goodthings.entity.CmsItem>()
                         .eq(com.goodthings.entity.CmsItem::getId, itemId)
@@ -82,9 +83,12 @@ public class CommentController {
             throw new BizException(403, "无权限删除");
         }
 
-        commentMapper.deleteById(id);
+        int affected = commentMapper.deleteById(id);
+        // B10 原子计数器：删除 0 行说明评论已经被别人删了，重复 delete 会让 comment_count 变负
+        if (affected == 0) {
+            throw new BizException("评论已被删除");
+        }
 
-        // 更新评论数
         itemMapper.update(null,
                 new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<com.goodthings.entity.CmsItem>()
                         .eq(com.goodthings.entity.CmsItem::getId, itemId)

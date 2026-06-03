@@ -49,7 +49,9 @@ public class TagController {
     @PostMapping("/items/{itemId}")
     public Result<?> bindItem(@RequestHeader("Authorization") String authHeader, @PathVariable Long itemId, @RequestBody List<Long> tagIds) {
         validateAuth(authHeader);
-        // 更新标签使用次数
+        // B10 原子计数器：setSql(\"use_count = use_count + 1\") 是 MySQL 原子操作
+        // 注意：本方法只更新了计数器，没有 insert cms_item_tag 关联表，
+        // 调用方需要自己保证 (item_id, tag_id) 关联已存在，否则 use_count 会虚高
         for (Long tagId : tagIds) {
             tagMapper.update(null,
                     new LambdaUpdateWrapper<CmsTag>()

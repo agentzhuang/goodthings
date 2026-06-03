@@ -149,13 +149,16 @@ public class CollectionController {
             throw new BizException("收藏夹不存在或无权限");
         }
 
-        itemCollectionMapper.delete(
+        int affected = itemCollectionMapper.delete(
                 new LambdaQueryWrapper<CmsItemCollection>()
                         .eq(CmsItemCollection::getItemId, itemId)
                         .eq(CmsItemCollection::getCollectionId, id)
         );
+        // B10 原子计数器：未在收藏夹时不要 -1，避免 item_count 变负
+        if (affected == 0) {
+            throw new BizException("收藏夹中无此收藏品");
+        }
 
-        // 更新收藏品数量
         collectionMapper.update(null,
                 new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CmsCollection>()
                         .eq(CmsCollection::getId, id)
