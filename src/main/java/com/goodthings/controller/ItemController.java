@@ -136,22 +136,21 @@ public class ItemController {
             throw new BizException("收藏品不存在");
         }
 
-        // 检查是否已点赞
-        CmsLike existLike = likeMapper.selectOne(
-                new LambdaQueryWrapper<CmsLike>()
-                        .eq(CmsLike::getUserId, userId)
-                        .eq(CmsLike::getItemId, id)
-        );
-        if (existLike != null) {
-            throw new BizException("已点赞");
-        }
-
+        // B2 修复：先插入 CmsLike，靠 (user_id, item_id) 唯一索引去重
+        // 原实现 selectOne + insert 之间有 race condition：两个并发请求都通过
+        // exists 检查，都会执行 insert+update，导致 like_count 翻倍
+        // 现在的顺序：先 insert（DB 唯一索引会拦截），失败再报错
         CmsLike like = new CmsLike();
         like.setUserId(userId);
         like.setItemId(id);
-        likeMapper.insert(like);
+        try {
+            likeMapper.insert(like);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw new BizException("已点赞");
+        }
 
-        // 更新点赞数
+        // 原子更新：使用 setSql 让 MySQL 自身保证原子性（不是先 select 再 +1）
+        // 配合 (user_id, item_id) 唯一索引，这个 +1 严格对应一个新点赞
         itemMapper.update(null,
                 new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CmsItem>()
                         .eq(CmsItem::getId, id)
@@ -172,13 +171,17 @@ public class ItemController {
             throw new BizException("收藏品不存在");
         }
 
-        likeMapper.delete(
+        // B3 修复：先 delete 再判断 affected rows，未点过赞就不要 -1
+        // 原实现直接 delete 然后无条件 -1，重复调用 unlike 会让 like_count 变负数
+        int affected = likeMapper.delete(
                 new LambdaQueryWrapper<CmsLike>()
                         .eq(CmsLike::getUserId, userId)
                         .eq(CmsLike::getItemId, id)
         );
+        if (affected == 0) {
+            throw new BizException("未点赞");
+        }
 
-        // 更新点赞数
         itemMapper.update(null,
                 new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CmsItem>()
                         .eq(CmsItem::getId, id)
