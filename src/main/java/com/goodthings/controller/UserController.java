@@ -88,15 +88,24 @@ public class UserController {
     @PutMapping("/me")
     public Result<?> updateCurrentUser(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody SysUser updateData) {
+            @RequestBody Map<String, Object> updateData) {
         Long userId = getUserIdFromHeader(authHeader);
         SysUser user = sysUserMapper.selectById(userId);
         if (user == null) {
             throw new BizException("用户不存在");
         }
-        if (updateData.getNickname() != null) user.setNickname(updateData.getNickname());
-        if (updateData.getAvatar() != null) user.setAvatar(updateData.getAvatar());
-        if (updateData.getEmail() != null) user.setEmail(updateData.getEmail());
+        // 安全：只允许更新白名单字段，避免 mass assignment 攻击
+        // 原实现直接 @RequestBody SysUser，攻击者可传 {id: 1, status: 0, password: ""}
+        // 改别人的账号、把自己降权、覆盖其他用户密码
+        if (updateData.containsKey("nickname")) {
+            user.setNickname((String) updateData.get("nickname"));
+        }
+        if (updateData.containsKey("avatar")) {
+            user.setAvatar((String) updateData.get("avatar"));
+        }
+        if (updateData.containsKey("email")) {
+            user.setEmail((String) updateData.get("email"));
+        }
         sysUserMapper.updateById(user);
         return Result.success("更新成功");
     }
