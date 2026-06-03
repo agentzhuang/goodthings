@@ -94,16 +94,24 @@ public class ItemController {
             throw new BizException("收藏品不存在");
         }
 
-        // 查询用户信息
+        // B4 修复：原实现 query 了 user / tagIds 但只返回了 item，前端拿不到作者和标签
+        // 现在组装完整响应：item + author (脱敏) + tagIds
         SysUser user = userMapper.selectById(item.getUserId());
+        // 安全：永远不把 password 字段返回给前端
+        if (user != null) {
+            user.setPassword(null);
+        }
 
-        // 查询标签
         List<CmsItemTag> itemTags = itemTagMapper.selectList(
                 new LambdaQueryWrapper<CmsItemTag>().eq(CmsItemTag::getItemId, id)
         );
         List<Long> tagIds = itemTags.stream().map(CmsItemTag::getTagId).collect(Collectors.toList());
 
-        return Result.success(java.util.Collections.singletonMap("item", item));
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("item", item);
+        data.put("author", user);
+        data.put("tagIds", tagIds);
+        return Result.success(data);
     }
 
     @DeleteMapping("/{id}")
